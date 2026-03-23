@@ -1,11 +1,763 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <title>私のポートフォリオサイト</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>挑戦タイプ診断 | CharDiag</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+JP:wght@400;500;700;900&display=swap" rel="stylesheet">
+<style>
+/* ============================================================ RESET */
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;font-family:'Noto Sans JP',-apple-system,BlinkMacSystemFont,sans-serif;background:#f8fafc;color:#111827;overflow:hidden;-webkit-font-smoothing:antialiased;overscroll-behavior:none}
+button{cursor:pointer;border:none;background:none;font-family:inherit}
+
+/* ============================================================ TOKENS */
+:root{
+  --red:#ef4444;--orange:#f97316;
+  --grad:linear-gradient(135deg,#ef4444,#f97316);
+  --glow:rgba(239,68,68,.25);
+  --g900:#111827;--g700:#374151;--g500:#6b7280;--g400:#9ca3af;--g200:#e5e7eb;--g100:#f3f4f6;
+  --white:#fff;
+  --sh-sm:0 1px 3px rgba(0,0,0,.07),0 1px 2px rgba(0,0,0,.04);
+  --sh-md:0 4px 16px rgba(0,0,0,.08),0 2px 6px rgba(0,0,0,.04);
+  --sh-red:0 6px 28px rgba(239,68,68,.32);
+  --ease:cubic-bezier(.25,.46,.45,.94);
+  --spring:cubic-bezier(.34,1.56,.64,1);
+}
+
+/* ============================================================ APP SHELL */
+#app{position:fixed;inset:0;display:flex;flex-direction:column}
+
+/* ============================================================ TOPBAR */
+#topbar{flex-shrink:0;padding:12px 16px 8px;z-index:50}
+.tb-inner{max-width:600px;margin:0 auto;background:rgba(255,255,255,.88);backdrop-filter:blur(16px);-webkit-backdrop-filter:blur(16px);border:1px solid rgba(0,0,0,.07);border-radius:99px;padding:10px 18px;display:flex;align-items:center;gap:12px;box-shadow:var(--sh-sm)}
+.tb-logo{font-weight:900;font-size:.9rem;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;white-space:nowrap;flex-shrink:0}
+.tb-prog-wrap{flex:1;display:flex;flex-direction:column;gap:4px;min-width:0}
+.tb-label{font-size:.63rem;color:var(--g400);font-weight:700;text-align:right;letter-spacing:.04em}
+.tb-bar-bg{height:4px;background:var(--g100);border-radius:99px;overflow:hidden}
+.tb-bar-fill{height:100%;background:var(--grad);border-radius:99px;transition:width .45s var(--ease);box-shadow:0 0 6px var(--glow)}
+
+/* ============================================================ SCREEN WRAP */
+#screen-wrap{flex:1;position:relative;overflow:hidden}
+.screen{position:absolute;inset:0;display:flex;flex-direction:column;padding:0 16px 24px;overflow-y:auto;overflow-x:hidden;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.screen::-webkit-scrollbar{display:none}
+.screen.hidden{display:none!important}
+.screen.s-enter{animation:sIn .35s var(--ease) both}
+.screen.s-exit{animation:sOut .3s var(--ease) both}
+.screen.sb-enter{animation:sbIn .35s var(--ease) both}
+.screen.sb-exit{animation:sbOut .3s var(--ease) both}
+@keyframes sIn{from{opacity:0;transform:translateX(36px)}to{opacity:1;transform:none}}
+@keyframes sOut{from{opacity:1;transform:none}to{opacity:0;transform:translateX(-36px)}}
+@keyframes sbIn{from{opacity:0;transform:translateX(-36px)}to{opacity:1;transform:none}}
+@keyframes sbOut{from{opacity:0;transform:none}to{opacity:0;transform:translateX(36px)}}
+@keyframes fadeUp{from{opacity:0;transform:translateY(18px)}to{opacity:1;transform:none}}
+@keyframes popIn{0%{opacity:0;transform:scale(.55)}70%{transform:scale(1.1)}100%{opacity:1;transform:scale(1)}}
+@keyframes pulse{0%,100%{transform:scale(1)}50%{transform:scale(1.07)}}
+@keyframes glowBeat{0%,100%{opacity:.3;transform:scale(1)}50%{opacity:.6;transform:scale(1.12)}}
+
+/* ============================================================ WELCOME */
+#s-welcome{display:block;overflow-y:auto;-webkit-overflow-scrolling:touch;padding:0}
+.w-inner{display:flex;flex-direction:column;align-items:center;text-align:center;gap:16px;padding:16px 0 48px;position:relative;min-height:100%}
+.w-glow-bg{position:absolute;top:-80px;left:50%;transform:translateX(-50%);width:480px;height:280px;background:radial-gradient(ellipse,rgba(239,68,68,.1) 0%,transparent 70%);pointer-events:none;z-index:0}
+.w-badge{position:relative;z-index:1;display:inline-flex;align-items:center;gap:6px;background:#fef2f2;border:1px solid #fecaca;border-radius:99px;padding:5px 14px;font-size:.7rem;font-weight:700;color:#dc2626;letter-spacing:.04em}
+.w-icon{position:relative;z-index:1;}
+#heroCanvas{display:block;width:min(460px,92vw);image-rendering:auto;filter:saturate(1.08) contrast(1.03) hue-rotate(-2deg);}
+.w-title{position:relative;z-index:1;font-size:clamp(1.5rem,5.5vw,2.1rem);font-weight:900;line-height:1.25;letter-spacing:-.03em;color:var(--g900)}
+.w-title em{font-style:normal;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.w-desc{position:relative;z-index:1;font-size:.85rem;color:var(--g500);line-height:1.75;max-width:300px;font-weight:500}
+.w-stats{position:relative;z-index:1;display:flex;justify-content:center;gap:22px}
+.w-stat{display:flex;flex-direction:column;align-items:center;gap:2px}
+.w-stat-num{font-size:1.2rem;font-weight:900;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text}
+.w-stat-lbl{font-size:.6rem;color:var(--g400);font-weight:600}
+.w-cta-wrap{position:relative;z-index:1;width:100%;max-width:300px}
+.w-cta-glow{position:absolute;inset:-4px;background:var(--grad);border-radius:99px;filter:blur(10px);opacity:.35;animation:glowBeat 2.5s ease-in-out infinite}
+.btn-start{position:relative;width:100%;background:var(--grad);color:#fff;font-size:.98rem;font-weight:900;padding:15px 28px;border-radius:99px;box-shadow:var(--sh-red);transition:transform .2s var(--spring);letter-spacing:.01em}
+.btn-start:hover{transform:scale(1.03)}.btn-start:active{transform:scale(.97)}
+.w-trust{position:relative;z-index:1;display:flex;flex-wrap:wrap;justify-content:center;gap:10px 18px;font-size:.68rem;font-weight:700;color:var(--g500)}
+.w-trust-item{display:flex;align-items:center;gap:5px}
+
+/* ============================================================ QUIZ */
+#s-quiz{justify-content:flex-start}
+.q-meta{display:flex;align-items:center;justify-content:space-between;margin-top:6px;margin-bottom:12px}
+.q-eyebrow{font-size:.65rem;font-weight:700;background:var(--grad);-webkit-background-clip:text;-webkit-text-fill-color:transparent;background-clip:text;text-transform:uppercase;letter-spacing:.1em}
+.q-back-btn{font-size:.72rem;color:var(--g400);font-weight:700;padding:4px 0;transition:color .2s;display:none;align-items:center;gap:4px}
+.q-back-btn.show{display:flex}.q-back-btn:hover{color:var(--g700)}
+.q-text{font-size:clamp(1rem,3.8vw,1.3rem);font-weight:900;line-height:1.5;letter-spacing:-.02em;color:var(--g900);margin-bottom:20px}
+
+/* 5段階ボタン */
+.scale-wrap{display:flex;flex-direction:column;gap:10px;margin-bottom:16px}
+.scale-labels{display:flex;justify-content:space-between;font-size:.62rem;color:var(--g400);font-weight:600;padding:0 4px}
+.scale-btns{display:flex;gap:8px;justify-content:center}
+.scale-btn{flex:1;max-width:56px;aspect-ratio:1/1;border-radius:14px;border:2px solid var(--g200);background:var(--white);font-size:1rem;font-weight:900;color:var(--g400);transition:all .18s var(--ease);box-shadow:var(--sh-sm);-webkit-tap-highlight-color:transparent;display:flex;align-items:center;justify-content:center}
+.scale-btn:hover{border-color:#fca5a5;background:#fff5f5;color:var(--g900);transform:translateY(-2px);box-shadow:var(--sh-md)}
+.scale-btn.sel{border-color:var(--red);background:#fff5f5;color:var(--red);box-shadow:0 0 0 3px rgba(239,68,68,.12),var(--sh-md);transform:translateY(-2px)}
+
+/* ドット */
+.q-dots{display:flex;justify-content:center;gap:6px;margin-bottom:14px}
+.qdot{width:6px;height:6px;border-radius:50%;background:var(--g200);transition:all .3s var(--spring)}
+.qdot.done{background:rgba(239,68,68,.4);transform:scale(1.1)}
+.qdot.active{background:var(--red);width:16px;border-radius:99px;box-shadow:0 0 5px var(--glow)}
+
+/* 次へボタン */
+.btn-next{width:100%;background:var(--grad);color:#fff;font-size:.9rem;font-weight:900;padding:14px 24px;border-radius:99px;box-shadow:var(--sh-red);transition:transform .2s var(--spring),opacity .2s;opacity:.4;pointer-events:none;letter-spacing:.01em;margin-top:4px}
+.btn-next.active{opacity:1;pointer-events:auto}
+.btn-next.active:hover{transform:scale(1.02)}.btn-next.active:active{transform:scale(.97)}
+
+/* ============================================================ RESULT */
+#s-result{align-items:center;text-align:center;padding-bottom:40px}
+.res-emoji-wrap{position:relative;margin:4px 0 8px;display:inline-block}
+#resCanvas{display:block;width:min(360px,92vw);animation:popIn .7s var(--spring) both;mix-blend-mode:multiply;filter:saturate(1.1) contrast(1.04)}
+.res-ring{display:none}
+@keyframes ringPulse{0%,100%{transform:scale(1);opacity:.8}50%{transform:scale(1.18);opacity:.2}}
+.res-tag{display:inline-block;background:#fef2f2;border:1px solid #fecaca;border-radius:99px;padding:3px 12px;font-size:.6rem;font-weight:700;color:#dc2626;letter-spacing:.06em;margin-bottom:6px;animation:fadeUp .5s .2s var(--ease) both}
+.res-name{font-size:clamp(.95rem,3.5vw,1.2rem);font-weight:700;letter-spacing:-.01em;color:var(--g500);margin-bottom:4px;animation:fadeUp .5s .25s var(--ease) both}
+.res-copy{font-size:.8rem;color:var(--g400);font-weight:500;margin-bottom:14px;animation:fadeUp .5s .3s var(--ease) both;font-style:italic}
+.res-cards{display:flex;flex-direction:column;gap:9px;width:100%;max-width:380px;animation:fadeUp .5s .35s var(--ease) both}
+.res-card{background:var(--white);border:1px solid var(--g200);border-radius:14px;padding:12px 15px;text-align:left;box-shadow:var(--sh-sm)}
+.res-card-lbl{font-size:.6rem;font-weight:700;color:#dc2626;text-transform:uppercase;letter-spacing:.08em;margin-bottom:4px}
+.res-card-txt{font-size:.82rem;color:var(--g700);line-height:1.6;font-weight:500}
+
+/* 軸スコアバー */
+.axis-bars{width:100%;max-width:380px;margin:14px 0;animation:fadeUp .5s .4s var(--ease) both}
+.axis-row{display:flex;align-items:center;gap:10px;margin-bottom:7px}
+.axis-label{font-size:.65rem;color:var(--g500);font-weight:700;width:28px;flex-shrink:0;text-align:right}
+.axis-track{flex:1;height:7px;background:var(--g100);border-radius:99px;overflow:hidden}
+.axis-fill{height:100%;border-radius:99px;background:var(--g200);transform:scaleX(0);transform-origin:left;transition:transform .75s var(--ease)}
+.axis-fill.hi{background:var(--grad);box-shadow:0 0 5px var(--glow)}
+.axis-val{font-size:.62rem;color:var(--g400);font-weight:700;width:26px;text-align:right}
+
+/* アクションボタン（アンケート後に表示） */
+.action-btns{display:none;flex-direction:column;gap:10px;width:100%;max-width:360px;margin-top:6px;animation:fadeUp .5s var(--ease) both}
+.action-btns.show{display:flex}
+.btn-action-primary{background:var(--grad);color:#fff;font-size:.92rem;font-weight:900;padding:14px 24px;border-radius:99px;box-shadow:var(--sh-red);transition:transform .2s var(--spring);letter-spacing:.01em}
+.btn-action-primary:hover{transform:scale(1.02)}.btn-action-primary:active{transform:scale(.97)}
+.btn-action-sec{font-size:.78rem;color:var(--g400);font-weight:700;padding:10px;transition:color .2s}
+.btn-action-sec:hover{color:var(--g700)}
+
+/* ============================================================ SURVEY MODAL */
+#survey-overlay{position:fixed;inset:0;background:rgba(17,24,39,.35);backdrop-filter:blur(4px);-webkit-backdrop-filter:blur(4px);z-index:200;display:flex;align-items:flex-end;justify-content:center;padding:0 16px 24px;animation:fadeIn .25s var(--ease) both}
+#survey-overlay.hidden{display:none}
+@keyframes fadeIn{from{opacity:0}to{opacity:1}}
+.survey-sheet{background:var(--white);border-radius:24px 24px 20px 20px;padding:28px 22px 24px;width:100%;max-width:480px;box-shadow:0 -4px 40px rgba(0,0,0,.12);animation:sheetUp .3s var(--spring) both}
+@keyframes sheetUp{from{opacity:0;transform:translateY(60px)}to{opacity:1;transform:none}}
+.survey-close{position:absolute;top:18px;right:18px;width:28px;height:28px;border-radius:50%;background:var(--g100);color:var(--g500);font-size:.85rem;font-weight:900;display:flex;align-items:center;justify-content:center;transition:all .2s;border:none;cursor:pointer}
+.survey-close:hover{background:var(--g200);color:var(--g900)}
+.survey-sheet{position:relative}
+.survey-title{font-size:1rem;font-weight:900;color:var(--g900);letter-spacing:-.02em;margin-bottom:4px}
+.survey-sub{font-size:.75rem;color:var(--g500);font-weight:500;margin-bottom:20px;line-height:1.6}
+.survey-stars{display:flex;gap:10px;justify-content:center;margin-bottom:20px}
+.star-btn{font-size:2.2rem;line-height:1;transition:transform .2s var(--spring),filter .2s;filter:grayscale(1) opacity(.3);-webkit-tap-highlight-color:transparent;cursor:pointer;border:none;background:none;padding:4px}
+.star-btn.lit{filter:none;transform:scale(1.15)}
+.star-btn:hover{filter:none;transform:scale(1.1)}
+.survey-labels{display:flex;justify-content:space-between;font-size:.62rem;color:var(--g400);font-weight:600;margin-top:-12px;margin-bottom:18px;padding:0 4px}
+.btn-survey-send{width:100%;background:var(--grad);color:#fff;font-size:.9rem;font-weight:900;padding:13px 24px;border-radius:99px;box-shadow:var(--sh-red);transition:transform .2s var(--spring),opacity .2s;opacity:.4;pointer-events:none}
+.btn-survey-send.active{opacity:1;pointer-events:auto}
+.btn-survey-send.active:hover{transform:scale(1.02)}.btn-survey-send.active:active{transform:scale(.97)}
+
+/* ============================================================ CONFETTI */
+#confetti-canvas{position:fixed;inset:0;pointer-events:none;z-index:9999}
+
+/* ============================================================ RESPONSIVE */
+@media(min-width:480px){
+  .screen{padding:0 24px 28px}
+  #topbar{padding:14px 20px 10px}
+  .scale-btn{max-width:64px;border-radius:16px}
+}
+@media(min-width:640px){.screen{padding:0 32px 32px}}
+@media(prefers-reduced-motion:reduce){*,*::before,*::after{animation-duration:.01ms!important;transition-duration:.01ms!important}}
+</style>
 </head>
 <body>
-    <h1>ようこそ！これは私のポートフォリオサイトです。</h1>
-    <p>GitHub Pagesによる公開テスト中です。</p>
+<div id="app">
+
+  <!-- Topbar -->
+  <div id="topbar">
+    <div class="tb-inner">
+      <div class="tb-logo">✦ CharDiag</div>
+      <div class="tb-prog-wrap">
+        <div class="tb-label" id="tbLabel">診断スタート</div>
+        <div class="tb-bar-bg"><div class="tb-bar-fill" id="tbBar" style="width:0%"></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div id="screen-wrap">
+
+    <!-- ========== WELCOME ========== -->
+    <div class="screen" id="s-welcome">
+      <div class="w-inner">
+      <div class="w-glow-bg"></div>
+      <div class="w-badge">⭐ SNSで話題！満足度98%</div>
+      <div class="w-icon">
+        <img id="heroImg" src="ChatGPT Image 2026年3月22日 21_10_41.png" alt="" crossorigin="anonymous" style="display:none">
+        <canvas id="heroCanvas"></canvas>
+      </div>
+      <div class="w-title">あなたの<br><em>挑戦タイプ</em>を<br>知ろう</div>
+      <div class="w-desc">10問の5段階評価で、あなたに最も近い「挑戦キャラクター」を診断します。</div>
+      <div class="w-stats">
+        <div class="w-stat"><span class="w-stat-num">10</span><span class="w-stat-lbl">問</span></div>
+        <div class="w-stat"><span class="w-stat-num">1分</span><span class="w-stat-lbl">所要時間</span></div>
+        <div class="w-stat"><span class="w-stat-num">8</span><span class="w-stat-lbl">タイプ</span></div>
+      </div>
+      <div class="w-cta-wrap">
+        <div class="w-cta-glow"></div>
+        <button class="btn-start" id="btnStart">診断を始める →</button>
+      </div>
+      <div class="w-trust">
+        <div class="w-trust-item">⏱ 所要時間約1分</div>
+        <div class="w-trust-item">🔒 登録不要・無料</div>
+        <div class="w-trust-item">👥 IPIPベースの診断</div>
+      </div>
+      </div><!-- /w-inner -->
+    </div>
+
+    <!-- ========== QUIZ ========== -->
+    <div class="screen hidden" id="s-quiz">
+      <div class="q-meta">
+        <div class="q-eyebrow" id="qEyebrow">Q1 / 10</div>
+        <button class="q-back-btn" id="qBack">← 戻る</button>
+      </div>
+      <div class="q-dots" id="qDots"></div>
+      <div class="q-text" id="qText"></div>
+      <div class="scale-wrap">
+        <div class="scale-labels">
+          <span>まったく当てはまらない</span>
+          <span>とても当てはまる</span>
+        </div>
+        <div class="scale-btns" id="scaleBtns">
+          <button class="scale-btn" data-v="1">1</button>
+          <button class="scale-btn" data-v="2">2</button>
+          <button class="scale-btn" data-v="3">3</button>
+          <button class="scale-btn" data-v="4">4</button>
+          <button class="scale-btn" data-v="5">5</button>
+        </div>
+      </div>
+      <button class="btn-next" id="btnNext">次へ →</button>
+    </div>
+
+    <!-- ========== RESULT ========== -->
+    <div class="screen hidden" id="s-result">
+      <div class="res-emoji-wrap">
+        <canvas id="resCanvas"></canvas>
+        <div class="res-ring"></div>
+      </div>
+      <div class="res-tag" id="resTag">タイプ</div>
+      <div class="res-name" id="resName">キャラ名</div>
+      <div class="res-copy" id="resCopy">キャッチコピー</div>
+      <div class="res-cards" id="resCards"></div>
+      <div class="action-btns" id="actionBtns">
+        <button class="btn-action-primary" id="btnDetail">詳細を見る</button>
+        <button class="btn-action-primary" id="btnJoin">参加する</button>
+        <button class="btn-action-primary" id="btnNext2">次のアクションを受け取る</button>
+        <button class="btn-action-sec" id="btnRetry">もう一度やり直す</button>
+      </div>
+    </div>
+
+  </div><!-- /screen-wrap -->
+</div><!-- /app -->
+
+<!-- ========== SURVEY MODAL ========== -->
+<div id="survey-overlay" class="hidden">
+  <div class="survey-sheet">
+    <button class="survey-close" id="surveyClose">✕</button>
+    <div class="survey-title">このサイトの満足度を教えてください</div>
+    <div class="survey-sub">あなたの回答が、より良いサービス作りに役立ちます。</div>
+    <div class="survey-stars" id="surveyStars">
+      <button class="star-btn" data-s="1">⭐</button>
+      <button class="star-btn" data-s="2">⭐</button>
+      <button class="star-btn" data-s="3">⭐</button>
+      <button class="star-btn" data-s="4">⭐</button>
+      <button class="star-btn" data-s="5">⭐</button>
+    </div>
+    <div class="survey-labels"><span>不満</span><span>大満足</span></div>
+    <button class="btn-survey-send" id="surveySend">回答して次へ進む →</button>
+  </div>
+</div>
+
+<canvas id="confetti-canvas" style="display:none"></canvas>
+
+<script>
+/* ================================================================
+   HERO IMAGE — 白背景除去（クロマキー）
+================================================================ */
+(function(){
+  const img    = document.getElementById('heroImg');
+  const canvas = document.getElementById('heroCanvas');
+  const BG     = { r:248, g:250, b:252 }; // サイトの背景色 #f8fafc
+
+  function processImage() {
+    const W = img.naturalWidth, H = img.naturalHeight;
+    if (!W || !H) return;
+
+    canvas.width  = W;
+    canvas.height = H;
+
+    // 表示サイズ: CSSのwidthはmin(320px,88vw)で自動スケール
+    const cssW = Math.min(460, window.innerWidth * 0.92);
+    canvas.style.width  = cssW + 'px';
+    canvas.style.height = Math.round(cssW * H / W) + 'px';
+
+    const ctx = canvas.getContext('2d');
+    ctx.drawImage(img, 0, 0);
+
+    const id   = ctx.getImageData(0, 0, W, H);
+    const data = id.data;
+
+    for (let i = 0; i < data.length; i += 4) {
+      const r = data[i], g = data[i+1], b = data[i+2];
+
+      // 背景色との差分（ユークリッド距離）
+      const dist = Math.sqrt(
+        (r - BG.r) ** 2 +
+        (g - BG.g) ** 2 +
+        (b - BG.b) ** 2
+      );
+
+      // 白〜明るいグレー帯域を透過（閾値35以下→完全透過、35〜70→フェード）
+      const HARD = 35, SOFT = 70;
+      if (dist < HARD) {
+        data[i+3] = 0;
+      } else if (dist < SOFT) {
+        data[i+3] = Math.round((dist - HARD) / (SOFT - HARD) * 255);
+      }
+    }
+
+    ctx.putImageData(id, 0, 0);
+  }
+
+  if (img.complete && img.naturalWidth) processImage();
+  else img.addEventListener('load', processImage);
+})();
+
+/* ================================================================
+   DATA — 10問
+================================================================ */
+const QUESTIONS = [
+  { text:'人が集まる場では、自分から話しかけるほうだ', axis:'E', dir:+1 },
+  { text:'人の気持ちを想像して、共感しやすい',           axis:'A', dir:+1 },
+  { text:'何かを始める前に、準備を整えておくほうだ',     axis:'C', dir:+1 },
+  { text:'たいていのことには、落ち着いて対応できる',     axis:'S', dir:+1 },
+  { text:'新しいアイデアや発想を考えるのが好きだ',       axis:'O', dir:+1 },
+  { text:'人前では、目立たない位置にいたいことが多い',   axis:'E', dir:-1 },
+  { text:'他人の悩みや事情には、あまり関心が向かない',   axis:'A', dir:-1 },
+  { text:'やるべきことを、つい後回しにしてしまうことが多い', axis:'C', dir:-1 },
+  { text:'つい、あれこれ心配しやすい',                   axis:'S', dir:-1 },
+  { text:'抽象的な話や、まだ形になっていない話には興味を持ちにくい', axis:'O', dir:-1 },
+];
+
+/* ================================================================
+   DATA — 8キャラクター
+================================================================ */
+const CHARACTERS = [
+  {
+    id:'patto', name:'パッとさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_36_57.png',
+    label:'直感で一気に動く',
+    E:5.0, A:3.5, C:2.5, S:4.0, O:5.0,
+    copy:'「感じたら、もう動いている」',
+    strength:'即断即決の行動力。チャンスを誰より先に掴み、最初に飛び込める力がある。',
+    weak:'準備や計画が後手に回り、途中で行き詰まることがある。スピード重視で見落としも。',
+    step:'まず「やる」と宣言してしまおう。形は動きながら整えていけばいい。',
+    share:'私の挑戦タイプは「パッとさん」⚡ 直感で一気に動く行動派！',
+  },
+  {
+    id:'jiwari', name:'じわりさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_01.png',
+    label:'静かに熱を育てる',
+    E:2.5, A:4.5, C:4.5, S:4.5, O:3.0,
+    copy:'「静かな情熱が、やがて大きな炎になる」',
+    strength:'感情に流されず、じっくりと物事を育て続ける持続力と安定感。',
+    weak:'慎重すぎて踏み出すタイミングを逃すことがある。',
+    step:'小さくても「続ける」ことから始めよう。あなたの力はそこで最大化される。',
+    share:'私の挑戦タイプは「じわりさん」🌿 静かに熱を育てる継続型！',
+  },
+  {
+    id:'norinori', name:'のりのりさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_04.png',
+    label:'仲間や空気で動く',
+    E:4.5, A:5.0, C:3.0, S:4.0, O:4.0,
+    copy:'「場の熱を、自分の燃料にする」',
+    strength:'人のエネルギーを引き出し、チーム全体を盛り上げる力。共感と共鳴が武器。',
+    weak:'一人になると失速しやすい。環境や仲間の質に大きく影響される。',
+    step:'仲間を見つけて一緒にやろう。あなたの力はチームで最大化される。',
+    share:'私の挑戦タイプは「のりのりさん」🎉 仲間と走る盛り上げ役！',
+  },
+  {
+    id:'kicchiri', name:'きっちりさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_06.png',
+    label:'準備してから始める',
+    E:2.5, A:3.5, C:5.0, S:4.5, O:2.5,
+    copy:'「準備が整ったとき、最高のスタートが切れる」',
+    strength:'緻密な計画と実行力。信頼される確実なプロジェクトの要。',
+    weak:'完璧を求めすぎて、スタートに時間がかかることがある。',
+    step:'完璧じゃなくていい。まず「60点の計画」で動き出してみよう。',
+    share:'私の挑戦タイプは「きっちりさん」📋 準備万端で確実に進む計画型！',
+  },
+  {
+    id:'bivitto', name:'ビビっとさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_09.png',
+    label:'ひらめきで着火する',
+    E:3.5, A:3.5, C:2.5, S:3.5, O:5.0,
+    copy:'「アイデアの火花が、世界を変える第一歩」',
+    strength:'独創的な発想力。誰も思いつかなかった切り口を見つける才能。',
+    weak:'アイデアは豊富でも、実行・継続の部分が難しいことがある。',
+    step:'一番面白いアイデアを1つ選んで、今日中に誰かに話してみよう。',
+    share:'私の挑戦タイプは「ビビっとさん」💡 ひらめきが武器のアイデア型！',
+  },
+  {
+    id:'kotsukotsu', name:'こつこつさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_11.png',
+    label:'地道に続けて伸びる',
+    E:2.5, A:4.0, C:5.0, S:4.0, O:3.5,
+    copy:'「積み重ねた日々が、揺るぎない実力になる」',
+    strength:'地道な継続力と誠実さ。長期的に信頼される、ブレない存在感。',
+    weak:'変化への対応が苦手で、新しい環境でペースを崩しやすい。',
+    step:'毎日少しずつでいい。小さな習慣から着実に始めよう。',
+    share:'私の挑戦タイプは「こつこつさん」🪨 積み重ねで着実に育つ継続型！',
+  },
+  {
+    id:'kurutto', name:'くるっとさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_20.png',
+    label:'切り替えで一気に変わる',
+    E:4.0, A:4.0, C:3.0, S:3.5, O:4.5,
+    copy:'「切り替えの早さが、あなたの最大の武器」',
+    strength:'状況変化への適応力と発想の柔軟性。ピンチをチャンスに変えられる。',
+    weak:'切り替えすぎて、一つのことを深める前に次へ行ってしまうことも。',
+    step:'「今回はここまで」と範囲を決めてから動いてみよう。',
+    share:'私の挑戦タイプは「くるっとさん」🔄 切り替え上手な柔軟型！',
+  },
+  {
+    id:'fuwatto', name:'ふわっとさん',
+    imgSrc:'ChatGPT Image 2026年3月22日 20_37_23.png',
+    label:'余白を持って試しながら進む',
+    E:3.0, A:4.5, C:2.5, S:3.0, O:4.5,
+    copy:'「余白の中に、新しい可能性が宿る」',
+    strength:'押し付けない優しさと、実験的に動ける柔軟さ。独自の世界観がある。',
+    weak:'方向性が定まらず、ふわふわとしたまま時間が過ぎることがある。',
+    step:'「試してみる」を合言葉に、小さな実験を1つ今日始めよう。',
+    share:'私の挑戦タイプは「ふわっとさん」☁️ 余白を大切にする実験型！',
+  },
+];
+
+/* ================================================================
+   STATE
+================================================================ */
+let qIndex   = 0;
+const answers = new Array(QUESTIONS.length).fill(null);
+let surveyRating = null;
+let surveyDone   = false;
+
+/* ================================================================
+   UTILS
+================================================================ */
+const $ = id => document.getElementById(id);
+
+function showScreen(id, dir = 'forward') {
+  const cur  = document.querySelector('#screen-wrap .screen:not(.hidden)');
+  const next = $(id);
+  if (!cur || cur === next) { next.classList.remove('hidden'); return; }
+  const ec = dir === 'forward' ? 's-exit' : 'sb-exit';
+  const nc = dir === 'forward' ? 's-enter' : 'sb-enter';
+  cur.classList.add(ec);
+  setTimeout(() => { cur.classList.add('hidden'); cur.classList.remove(ec); }, 300);
+  next.classList.remove('hidden');
+  void next.offsetWidth;
+  next.classList.add(nc);
+  setTimeout(() => next.classList.remove(nc), 380);
+}
+
+function setProgress(n, total) {
+  $('tbBar').style.width = total > 0 ? Math.round(n / total * 100) + '%' : '100%';
+  $('tbLabel').textContent = total > 0 ? `Q${n} / ${total}` : '';
+}
+
+/* ================================================================
+   QUIZ RENDER
+================================================================ */
+function buildDots() {
+  $('qDots').innerHTML = QUESTIONS.map((_,i) => `<div class="qdot"></div>`).join('');
+}
+
+function updateDots() {
+  $('qDots').querySelectorAll('.qdot').forEach((d,i) => {
+    d.className = 'qdot' + (i < qIndex ? ' done' : i === qIndex ? ' active' : '');
+  });
+}
+
+function renderQuestion() {
+  const q = QUESTIONS[qIndex];
+  $('qEyebrow').textContent = `Q${qIndex + 1} / ${QUESTIONS.length}`;
+  $('qText').textContent    = q.text;
+  setProgress(qIndex + 1, QUESTIONS.length);
+  updateDots();
+
+  const back = $('qBack');
+  back.classList.toggle('show', qIndex > 0);
+
+  // reset scale buttons
+  document.querySelectorAll('.scale-btn').forEach(btn => {
+    btn.classList.toggle('sel', +btn.dataset.v === answers[qIndex]);
+  });
+
+  refreshNextBtn();
+}
+
+function refreshNextBtn() {
+  $('btnNext').classList.toggle('active', answers[qIndex] !== null);
+}
+
+/* ================================================================
+   SCORING
+================================================================ */
+function calcScores() {
+  // raw answers indexed 0-9
+  const raw = answers.map((v, i) => QUESTIONS[i].dir === -1 ? 6 - v : v);
+  const axis = (i1, i2) => (raw[i1] + raw[i2]) / 2;
+  return {
+    E: axis(0, 5),
+    A: axis(1, 6),
+    C: axis(2, 7),
+    S: axis(3, 8),
+    O: axis(4, 9),
+  };
+}
+
+function calcDistance(scores, char) {
+  return 1.2 * Math.abs(scores.E - char.E)
+       + 0.8 * Math.abs(scores.A - char.A)
+       + 1.2 * Math.abs(scores.C - char.C)
+       + 0.8 * Math.abs(scores.S - char.S)
+       + 1.2 * Math.abs(scores.O - char.O);
+}
+
+function findBestCharacter(scores) {
+  const ranked = CHARACTERS.map(c => ({ c, D: calcDistance(scores, c) }))
+    .sort((a, b) => {
+      const dd = a.D - b.D;
+      if (Math.abs(dd) > 1e-9) return dd;
+      const cA = Math.abs(scores.C - a.c.C), cB = Math.abs(scores.C - b.c.C);
+      if (Math.abs(cA - cB) > 1e-9) return cA - cB;
+      const oA = Math.abs(scores.O - a.c.O), oB = Math.abs(scores.O - b.c.O);
+      if (Math.abs(oA - oB) > 1e-9) return oA - oB;
+      const eA = Math.abs(scores.E - a.c.E), eB = Math.abs(scores.E - b.c.E);
+      if (Math.abs(eA - eB) > 1e-9) return eA - eB;
+      return b.c.A - a.c.A; // higher A wins
+    });
+  return ranked[0];
+}
+
+/* ================================================================
+   CANVAS 白背景除去ユーティリティ
+================================================================ */
+function removeWhiteBg(canvas, imgEl, cssW) {
+  const W = imgEl.naturalWidth, H = imgEl.naturalHeight;
+  if (!W || !H) return;
+  canvas.width  = W;
+  canvas.height = H;
+  const scale = cssW / W;
+  canvas.style.width  = cssW + 'px';
+  canvas.style.height = Math.round(H * scale) + 'px';
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(imgEl, 0, 0);
+  const id = ctx.getImageData(0, 0, W, H);
+  const d  = id.data;
+  const BG = { r:248, g:250, b:252 };
+  for (let i = 0; i < d.length; i += 4) {
+    const dist = Math.sqrt((d[i]-BG.r)**2 + (d[i+1]-BG.g)**2 + (d[i+2]-BG.b)**2);
+    if      (dist < 35) d[i+3] = 0;
+    else if (dist < 70) d[i+3] = Math.round((dist - 35) / 35 * 255);
+  }
+  ctx.putImageData(id, 0, 0);
+}
+
+function renderCharCanvas(src) {
+  const canvas = $('resCanvas');
+  const cssW   = Math.min(360, window.innerWidth * 0.92);
+  const img    = new Image();
+  img.onload = () => removeWhiteBg(canvas, img, cssW);
+  img.src    = src;
+}
+
+/* ================================================================
+   RESULT RENDER
+================================================================ */
+function showResult() {
+  const scores = calcScores();
+  const { c: char, D } = findBestCharacter(scores);
+
+  // キャラ画像をcanvasで白背景除去して表示
+  renderCharCanvas(char.imgSrc);
+
+  $('resTag').textContent  = char.label;
+  $('resName').textContent = char.name;
+  $('resCopy').textContent = char.copy;
+
+  // Cards
+  $('resCards').innerHTML = [
+    ['強み',              char.strength],
+    ['止まりやすいポイント', char.weak],
+    ['最初の一歩',         char.step],
+    ['シェア用一言',       char.share],
+  ].map(([lbl, txt]) => `
+    <div class="res-card">
+      <div class="res-card-lbl">${lbl}</div>
+      <div class="res-card-txt">${txt}</div>
+    </div>`).join('');
+
+  $('tbLabel').textContent = '診断結果';
+  $('tbBar').style.width   = '100%';
+
+  showScreen('s-result');
+
+  // アンケートを少し遅らせて表示
+  setTimeout(openSurvey, 900);
+}
+
+/* ================================================================
+   SURVEY
+================================================================ */
+function openSurvey() {
+  $('survey-overlay').classList.remove('hidden');
+  surveyRating = null;
+  document.querySelectorAll('.star-btn').forEach(b => b.classList.remove('lit'));
+  $('btn-survey-send') && $('btn-survey-send').classList.remove('active');
+  $('surveySend').classList.remove('active');
+}
+
+function closeSurvey() {
+  $('survey-overlay').classList.add('hidden');
+  revealActionButtons();
+}
+
+function revealActionButtons() {
+  if (surveyDone) return;
+  surveyDone = true;
+  $('actionBtns').classList.add('show');
+  $('s-result').scrollTo({ top: $('s-result').scrollHeight, behavior: 'smooth' });
+}
+
+// Star selection
+document.querySelectorAll('.star-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    surveyRating = +btn.dataset.s;
+    document.querySelectorAll('.star-btn').forEach((b, i) => {
+      b.classList.toggle('lit', i < surveyRating);
+    });
+    $('surveySend').classList.add('active');
+  });
+});
+
+$('surveySend').addEventListener('click', () => {
+  if (!surveyRating) return;
+  // ここで送信処理（実装先に応じて追加）
+  closeSurvey();
+});
+
+$('surveyClose').addEventListener('click', () => {
+  closeSurvey();
+});
+
+/* ================================================================
+   EVENT WIRING
+================================================================ */
+$('btnStart').addEventListener('click', () => {
+  qIndex = 0;
+  answers.fill(null);
+  surveyDone   = false;
+  surveyRating = null;
+  $('actionBtns').classList.remove('show');
+  buildDots();
+  showScreen('s-quiz');
+  renderQuestion();
+});
+
+$('qBack').addEventListener('click', () => {
+  if (qIndex > 0) {
+    qIndex--;
+    showScreen('s-quiz', 'back');
+    renderQuestion();
+  }
+});
+
+document.querySelectorAll('.scale-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    answers[qIndex] = +btn.dataset.v;
+    document.querySelectorAll('.scale-btn').forEach(b => {
+      b.classList.toggle('sel', b === btn);
+    });
+    refreshNextBtn();
+  });
+});
+
+$('btnNext').addEventListener('click', () => {
+  if (answers[qIndex] === null) return;
+  if (qIndex < QUESTIONS.length - 1) {
+    qIndex++;
+    showScreen('s-quiz');
+    renderQuestion();
+  } else {
+    showResult();
+  }
+});
+
+$('btnRetry').addEventListener('click', () => {
+  qIndex = 0;
+  answers.fill(null);
+  surveyDone   = false;
+  surveyRating = null;
+  $('actionBtns').classList.remove('show');
+  buildDots();
+  showScreen('s-quiz', 'back');
+  renderQuestion();
+});
+
+$('btnDetail').addEventListener('click', () => {
+  alert('詳細ページへの導線をここに実装してください。');
+});
+
+$('btnJoin').addEventListener('click', () => {
+  alert('参加フォームへの導線をここに実装してください。');
+});
+
+$('btnNext2').addEventListener('click', () => {
+  alert('次のアクション受け取りフォームへの導線をここに実装してください。');
+});
+
+/* ================================================================
+   CONFETTI（結果表示時）
+================================================================ */
+function launchConfetti() {
+  const cv = $('confetti-canvas');
+  cv.style.display = 'block';
+  cv.width = innerWidth; cv.height = innerHeight;
+  const ctx = cv.getContext('2d');
+  const cols = ['#ef4444','#f97316','#fbbf24','#34d399','#60a5fa','#a78bfa'];
+  const ps = Array.from({length:80}, () => ({
+    x: Math.random()*cv.width, y:-10-Math.random()*50,
+    vx:(Math.random()-.5)*4, vy:Math.random()*3+1.5,
+    w:Math.random()*9+3, h:Math.random()*5+2,
+    rot:Math.random()*360, rv:(Math.random()-.5)*6,
+    c: cols[Math.floor(Math.random()*cols.length)]
+  }));
+  let t0 = null;
+  (function tick(ts) {
+    if (!t0) t0 = ts;
+    const el = ts - t0;
+    ctx.clearRect(0,0,cv.width,cv.height);
+    ps.forEach(p => {
+      p.x+=p.vx; p.y+=p.vy; p.vy+=.06; p.rot+=p.rv;
+      ctx.save();
+      ctx.globalAlpha = Math.max(0, 1 - el/2800*1.2);
+      ctx.translate(p.x,p.y); ctx.rotate(p.rot*Math.PI/180);
+      ctx.fillStyle = p.c;
+      ctx.fillRect(-p.w/2,-p.h/2,p.w,p.h);
+      ctx.restore();
+    });
+    if (el < 2800) requestAnimationFrame(tick);
+    else { ctx.clearRect(0,0,cv.width,cv.height); cv.style.display='none'; }
+  })(performance.now());
+}
+</script>
 </body>
 </html>
